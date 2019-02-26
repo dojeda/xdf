@@ -14,6 +14,7 @@ from collections import OrderedDict, defaultdict
 import logging
 
 import numpy as np
+from xmljson import parker
 
 __all__ = ['load_xdf']
 __version__ = '1.14.0'
@@ -265,17 +266,18 @@ def load_xdf(filename,
             if tag == 1:
                 # read [FileHeader] chunk
                 xml_string = f.read(chunklen - 2)
-                fileheader = _xml2dict(ET.fromstring(xml_string))
+                fileheader = _load_xml(ET.fromstring(xml_string))
             elif tag == 2:
                 # read [StreamHeader] chunk...
                 # read [Content]
                 xml_string = f.read(chunklen - 6)
                 decoded_string = xml_string.decode('utf-8', 'replace')
-                hdr = _xml2dict(ET.fromstring(decoded_string))
+                hdr = _load_xml(ET.fromstring(decoded_string))
+                old_hdr = _xml2dict(ET.fromstring(decoded_string))
                 streams[StreamId] = hdr
-                logger.debug('  found stream ' + hdr['info']['name'][0])
+                logger.debug('  found stream ' + hdr['info']['name'])
                 # initialize per-stream temp data
-                temp[StreamId] = StreamData(hdr)
+                temp[StreamId] = StreamData(old_hdr)
             elif tag == 3:
                 # read [Samples] chunk...
                 # noinspection PyBroadException
@@ -334,7 +336,7 @@ def load_xdf(filename,
             elif tag == 6:
                 # read [StreamFooter] chunk
                 xml_string = f.read(chunklen - 6)
-                streams[StreamId]['footer'] = _xml2dict(ET.fromstring(xml_string))
+                streams[StreamId]['footer'] = _load_xml(ET.fromstring(xml_string))
             elif tag == 4:
                 # read [ClockOffset] chunk
                 temp[StreamId].clock_times.append(struct.unpack('<d', f.read(8))[0])
@@ -413,6 +415,11 @@ def _xml2dict(t):
         for k, v in dc.items():
             dd[k].append(v)
     return {t.tag: dd or t.text}
+
+
+def _load_xml(t):
+    """Convert an attribute-less etree.Element into a dict."""
+    return parker.data(t, preserve_root=True)
 
 
 def _scan_forward(f):
