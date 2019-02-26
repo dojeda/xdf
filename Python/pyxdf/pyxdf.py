@@ -433,7 +433,7 @@ def _scan_forward(f):
         block = f.read(blocklen)
         matchpos = block.find(signature)
         if matchpos != -1:
-            f.seek(curpos + matchpos + 15)
+            f.seek(curpos + matchpos + 16)
             logger.debug('  scan forward found a boundary chunk.')
             break
         if len(block) < blocklen:
