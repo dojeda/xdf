@@ -32,7 +32,8 @@ def load_xdf(filename,
              clock_reset_threshold_stds=5,
              clock_reset_threshold_offset_seconds=1,
              clock_reset_threshold_offset_stds=10,
-             winsor_threshold=0.0001):
+             winsor_threshold=0.0001,
+             headers_only=False):
     """Import an XDF file.
 
     This is an importer for multi-stream XDF (Extensible Data Format)
@@ -93,6 +94,9 @@ def load_xdf(filename,
         winsor_threshold : A threshold above which jitters the clock offsets
           will be treated robustly (i.e., like outliers), in seconds
           (default: 0.0001)
+
+        headers_only: Read only the file and stream header. No stream data will
+          be decoded. (default: False)
 
         Parameters for jitter removal in the presence of data breaks:
 
@@ -245,6 +249,17 @@ def load_xdf(filename,
                 log_str += ', StreamId={}'.format(StreamId)
 
             logger.debug(log_str)
+
+            # Quick read of header only: when the chunk if not a header, move
+            # the file pointer to the beginning of the next chunk
+            if headers_only and tag not in (1, 2):
+                offset = 2  # We already read 2 bytes for the tag
+                if tag in (2, 3, 4, 6):
+                    # In these cases, we already read 4 bytes!
+                    offset += 4
+                # Move n=chunklen-offset bytes forward, relative to current position (whence=1)
+                f.seek(chunklen - offset, 1)
+                continue
 
             # read the chunk's [Content]...
             if tag == 1:
