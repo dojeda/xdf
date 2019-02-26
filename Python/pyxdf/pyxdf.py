@@ -5,13 +5,13 @@ This function is closely following the load_xdf reference implementation.
 Copyright (c) 2015-2018, Syntrogi Inc. dba Intheon
 """
 
-import os
-import struct
 import itertools
 import gzip
-import xml.etree.ElementTree as ET
-from collections import OrderedDict, defaultdict
 import logging
+import os
+import struct
+import xml.etree.ElementTree as ET
+from collections import defaultdict, OrderedDict
 
 import numpy as np
 from xmljson import parker
@@ -238,8 +238,8 @@ def load_xdf(filename,
                 chunklen = _read_varlen_int(f)
             except Exception:
                 if f.tell() < filesize - 1024:
-                    logger.warn('got zero-length chunk, scanning forward to '
-                                'next boundary chunk.')
+                    logger.warning('got zero-length chunk, scanning forward to '
+                                   'next boundary chunk.')
                     _scan_forward(f)
                     continue
                 else:
@@ -334,8 +334,9 @@ def load_xdf(filename,
                 except Exception as e:
                     # an error occurred (perhaps a chopped-off file): emit a
                     # warning and scan forward to the next recognized chunk
-                    logger.error('found likely XDF file corruption (%s), '
-                                 'scanning forward to next boundary chunk.' % e)
+                    logger.error('found likely XDF file corruption (%s: %s), '
+                                 'scanning forward to next boundary chunk.',
+                                 type(e).__name__, e, exc_info=True)
                     _scan_forward(f)
             elif tag == 6:
                 # read [StreamFooter] chunk
