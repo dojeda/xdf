@@ -344,8 +344,18 @@ def load_xdf(filename,
                 streams[StreamId]['footer'] = _load_xml(ET.fromstring(xml_string))
             elif tag == 4:
                 # read [ClockOffset] chunk
-                temp[StreamId].clock_times.append(struct.unpack('<d', f.read(8))[0])
-                temp[StreamId].clock_values.append(struct.unpack('<d', f.read(8))[0])
+                try:
+                    temp[StreamId].clock_times.append(struct.unpack('<d', f.read(8))[0])
+                    temp[StreamId].clock_values.append(struct.unpack('<d', f.read(8))[0])
+                except Exception as e:
+                    logger.error('found likely XDF file corruption (%s: %s), '
+                                 'scanning forward to next boundary chunk.',
+                                 type(e).__name__, e, exc_info=True)
+                    # If reading clock_times succeeded, but not clock_values, drop that last
+                    # observation
+                    while len(temp[StreamId].clock_times) > len(temp[StreamId].clock_values):
+                        temp[StreamId].clock_times.pop()
+                    _scan_forward(f)
             else:
                 # skip other chunk types (Boundary, ...)
                 f.read(chunklen - 2)
