@@ -34,6 +34,7 @@ def load_xdf(filename,
              clock_reset_threshold_offset_seconds=1,
              clock_reset_threshold_offset_stds=10,
              winsor_threshold=0.0001,
+             sort_streams=True,
              headers_only=False):
     """Import an XDF file.
 
@@ -98,6 +99,9 @@ def load_xdf(filename,
 
         headers_only: Read only the file and stream header. No stream data will
           be decoded. (default: False)
+
+        sort_streams: Sort the streams by their names, as present in their
+          stream headers. (default: True)
 
         Parameters for jitter removal in the presence of data breaks:
 
@@ -390,8 +394,9 @@ def load_xdf(filename,
         stream['time_stamps'] = tmp.time_stamps
 
     streams = [s for s in streams.values()]
-    sort_data = [s['info']['name'][0] for s in streams]
-    streams = [x for _, x in sorted(zip(sort_data, streams))]
+    if sort_streams:
+        streams.sort(key=lambda s: s['info']['name'])
+
     return streams, fileheader
 
 
