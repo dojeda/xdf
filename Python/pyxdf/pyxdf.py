@@ -353,7 +353,7 @@ def load_xdf(filename,
                                  type(e).__name__, e, exc_info=True)
                     # If reading clock_times succeeded, but not clock_values, drop that last
                     # observation
-                    while len(temp[StreamId].clock_times) > len(temp[StreamId].clock_values):
+                    if StreamId in temp and len(temp[StreamId].clock_times) > len(temp[StreamId].clock_values):
                         temp[StreamId].clock_times.pop()
                     _scan_forward(f)
             else:
