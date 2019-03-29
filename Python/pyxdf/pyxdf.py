@@ -35,7 +35,8 @@ def load_xdf(filename,
              clock_reset_threshold_offset_stds=10,
              winsor_threshold=0.0001,
              sort_streams=True,
-             headers_only=False):
+             headers_only=False,
+             xml_parser='default'):
     """Import an XDF file.
 
     This is an importer for multi-stream XDF (Extensible Data Format)
@@ -214,6 +215,14 @@ def load_xdf(filename,
     if not os.path.exists(filename):
         raise Exception('file %s does not exist.' % filename)
 
+    if xml_parser == 'default':
+        xml_load_func = _xml2dict
+    elif xml_parser == 'parker':
+        xml_load_func = _load_xml
+    else:
+        raise ValueError('Invalid xml_parser parameter')
+
+
     # dict of returned streams, in order of apparance, indexed by stream id
     streams = OrderedDict()
     # dict of per-stream temporary data (StreamData), indexed by stream id
@@ -272,16 +281,16 @@ def load_xdf(filename,
             if tag == 1:
                 # read [FileHeader] chunk
                 xml_string = f.read(chunklen - 2)
-                fileheader = _load_xml(ET.fromstring(xml_string))
+                fileheader = xml_load_func(ET.fromstring(xml_string))
             elif tag == 2:
                 # read [StreamHeader] chunk...
                 # read [Content]
                 xml_string = f.read(chunklen - 6)
                 decoded_string = xml_string.decode('utf-8', 'replace')
-                hdr = _load_xml(ET.fromstring(decoded_string))
+                hdr = xml_load_func(ET.fromstring(decoded_string))
                 old_hdr = _xml2dict(ET.fromstring(decoded_string))
                 streams[StreamId] = hdr
-                logger.debug('  found stream ' + hdr['info']['name'])
+                logger.debug('  found stream ' + old_hdr['info']['name'][0])
                 # initialize per-stream temp data
                 temp[StreamId] = StreamData(old_hdr)
             elif tag == 3:
@@ -343,7 +352,7 @@ def load_xdf(filename,
             elif tag == 6:
                 # read [StreamFooter] chunk
                 xml_string = f.read(chunklen - 6)
-                streams[StreamId]['footer'] = _load_xml(ET.fromstring(xml_string))
+                streams[StreamId]['footer'] = xml_load_func(ET.fromstring(xml_string))
             elif tag == 4:
                 # read [ClockOffset] chunk
                 try:
