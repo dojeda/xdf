@@ -201,6 +201,8 @@ def load_xdf(filename,
             self.last_timestamp = 0.0
             # nominal sampling interval, in seconds, for delta decompression
             self.tdiff = 1.0 / self.srate if self.srate > 0 else 0.0
+            # effective sampling rate
+            self.effective_srate = 0
             # pre-calc some parsing parameters for efficiency
             if self.fmt != 'string':
                 # number of bytes to read from stream to handle one sample
@@ -394,8 +396,9 @@ def load_xdf(filename,
                                jitter_break_threshold_samples,)
     else:
         for stream in temp.values():
-            duration = stream.time_stamps[-1] - stream.time_stamps[0]
-            stream.effective_srate = len(stream.time_stamps) / duration
+            if stream.time_stamps.shape[0] > 2:
+                duration = stream.time_stamps[-1] - stream.time_stamps[0]
+                stream.effective_srate = len(stream.time_stamps) / duration
 
     for k in streams.keys():
         stream = streams[k]
